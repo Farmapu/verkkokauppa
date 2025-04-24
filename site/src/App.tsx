@@ -1,15 +1,17 @@
 import Header from './components/Header';
-import Message from './components/Message';
-import ItemList from './components/ItemList';
+//import ItemList from './components/ItemList';
+import DisplayItem from './components/item';
+import ApiTest from './components/ApiTest';
 import { Fragment } from 'react/jsx-runtime';
 
 function App() {
+
   return (
   <>
     <Header />
     <body>
-      <Message />
-      <ItemList />
+      <DisplayItem />
+      <ApiTest />
     </body>
   </>
   )
