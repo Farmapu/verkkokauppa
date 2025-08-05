@@ -1,4 +1,6 @@
 .env
 __pycache__
-site/frontend/node_modules
-site/backend/node_modules
+node_modules
+package.json
+package-lock.json
+Assets
