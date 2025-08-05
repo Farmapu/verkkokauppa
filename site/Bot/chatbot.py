@@ -5,16 +5,14 @@ from pymongo import MongoClient
 from langdetect import detect
 from openai import OpenAI
 
-# Load environment variables
 load_dotenv()
 
-# Validate env variables
 mongo_uri = os.getenv("MONGO_URI")
 openai_key = os.getenv("OPENAI_KEY")
 if not mongo_uri or not openai_key:
     raise EnvironmentError("Missing MONGO_URI or OPENAI_KEY in .env")
 
-# MongoDB setup
+
 client = MongoClient(mongo_uri)
 db = client["Verkkokauppa"]
 collections = {
@@ -26,7 +24,6 @@ collections = {
 faq_collection = db["Chatbot"]
 log_collection = db["conversation_logs"]
 
-# OpenAI setup
 openai = OpenAI(api_key=openai_key)
 
 conversation_history = []
@@ -100,15 +97,22 @@ def chat_with_gpt(user_input):
             for ram in all_rams
         )
     else:
+        prompts_by_lang = {
+    "fi": "Olet kohtelias asiakaspalvelurobotti, joka vastaa suomeksi ja auttaa verkkokaupan asiakkaita. Vastaa lyhyesti, selkeästi ja ystävällisesti.",
+    "en": "You are a polite customer service assistant that responds in English and helps customers of an online store. Answer clearly and concisely.",
+    "sv": "Du är en artig kundtjänstrobot som svarar på svenska och hjälper kunder i en webbutik. Svara tydligt och vänligt.",
+    "de": "Du bist ein höflicher Kundenservice-Bot, der auf Deutsch antwortet und Kunden in einem Online-Shop hilft. Antworte klar und freundlich.",
+    "fr": "Vous êtes un assistant client poli qui répond en français et aide les clients d'une boutique en ligne. Répondez clairement et gentiment.",
+    "es": "Eres un asistente de atención al cliente educado que responde en español y ayuda a los clientes de una tienda online. Responde de forma clara y amable."
+        }
+
+        language_prompt = prompts_by_lang.get(language, prompts_by_lang["en"])
+
         system_prompt = [
-            {"role": "system", "content":
-                                        "Olet kohtelias asiakaspalvelurobotti, joka auttaa verkkokaupan asiakkaita."
-                                        "Verkkokauppa myy tietokonekomponentteja, kuten RAM-muisteja, prosessoreita, näytönohjaimia ja emolevyjä."
-                                        "Vastaa täsmällisesti, ystävällisesti ja ytimekkäästi asiakkaan kielellä. "
-                                        "Jos asiakas kysyy hinnasta tai takuusta, ohjaa logiikka käyttämään tietokannan tietoja."
-                                        "Käytä kohteliasta sävyä ja älä keksimällä keksi teknisiä tietoja, jos niitä ei ole annettu."},
-            {"role": "system", "content": f"Tässä on usein kysyttyjä kysymyksiä:\n{context}"},
-        ]
+            {"role": "system", "content": language_prompt},
+            {"role": "user", "content": "Please reply in the same language as the question."},
+            {"role": "system", "content": f"Tässä on usein kysyttyjä kysymyksiä:\n{context}"}
+]
         messages = system_prompt + conversation_history[-MAX_HISTORY:] + [{"role": "user", "content": user_input}]
 
         completion = openai.chat.completions.create(
