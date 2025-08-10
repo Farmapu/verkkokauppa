@@ -3,8 +3,10 @@ const mongoose = require('mongoose')
 require("dotenv").config({path: "./.env"})
 const ramModel = require('./models/Ram')
 const { spawn } = require('child_process')
+const cors = require("cors")
 
 const app = express()
+app.use(cors())
 const mongoURL = process.env.MONGO_URI;
 const port = 8080;
 
@@ -19,7 +21,7 @@ const runBot = async (script, args) => {
             output = buf.toString('latin1');
         });
         py.stderr.on("data", (data) => {
-            console.error('[Python] Error: ${data}')
+            console.error('[Python] Error: ' + data)
             reject('Error ${chat}')
         });
         py.on("exit", (code) => {
@@ -63,7 +65,7 @@ app.post('/products/ram/add', async(req, res) => {
 //Run chatbot
 app.get('/chatbot', async (req, res) => {
     try {
-        const result = await runBot('Python/chat.py', [req.query.msg]);
+        const result = await runBot('Python/chat.py', [req.query.message]);
         res.json({result: result});
     } catch (error) {
         res.status(500).json({Error_message: error.message});

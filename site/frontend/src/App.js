@@ -6,12 +6,14 @@ import KotiKategoria from './Pages/KotiKategoria';
 import Tuote from './Pages/Tuote';
 import Cart from './Pages/Cart';
 import Login from './Pages/Login';
+import Chatbot from './Components/Chatbot/Chatbot';
 
 function App() {
   return (
     <div>
       <BrowserRouter>
         <Navbar/>
+        <Chatbot/>
         <Routes>
           <Route path='/' element={<Koti/>}></Route>
           <Route path='/prosessori' element={<KotiKategoria category="prosessori"/>}></Route>
