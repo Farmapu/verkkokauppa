@@ -6,7 +6,9 @@ const { spawn } = require('child_process')
 const cors = require("cors")
 
 const app = express()
-app.use(cors())
+app.use(cors({
+    origin: "http://localhost:3000"
+}))
 const mongoURL = process.env.MONGO_URI;
 const port = 8080;
 
