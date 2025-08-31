@@ -2,23 +2,35 @@ import React, {useState} from "react";
 import './Chatbot.css';
 import {useRef} from "react";
 
+const answer = {result: "default"};
+
 const Chatbot = () => {
     const inputRef = useRef(null);
     const [answers, setAnswer] = useState([]);
+    
 
-    function chat(question) {
-        var answer
-        fetch('http://localhost:8080/chatbot?message=' + question)
-        .then(res => res.json())
-        .then(data => answer = data)
-        //.then(data => console.log(data));
-        return answer;
+    async function chat(question) {
+        try{
+            const response = await fetch('http://localhost:8080/chatbot?message=' + question);
+            if(!response.ok) {
+                throw new Error(response.status);
+            } else {
+                const result = await response.json();
+                console.log(result);
+                addQuestion(question);
+                addAnswer(result.result);
+            }
+        } catch (error) {
+            console.error(error.message);
+        }
     }
 
-    function addAnswer(question){
-        var response = chat(question);
+    function addQuestion(question){
         setAnswer(a => [...a, question]);
-        console.log(answers)
+    }
+
+    function addAnswer(answer){
+        setAnswer(a => [...a, answer]);
     }
 
     function removeAnswer(index){
