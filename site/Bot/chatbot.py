@@ -5,6 +5,8 @@ from pymongo import MongoClient
 from langdetect import detect
 from openai import OpenAI
 
+# Load environment variables
+
 load_dotenv()
 
 mongo_uri = os.getenv("MONGO_URI")
@@ -12,6 +14,7 @@ openai_key = os.getenv("OPENAI_KEY")
 if not mongo_uri or not openai_key:
     raise EnvironmentError("Missing MONGO_URI or OPENAI_KEY in .env")
 
+# MongoDB setup
 
 client = MongoClient(mongo_uri)
 db = client["Verkkokauppa"]
@@ -24,14 +27,21 @@ collections = {
 faq_collection = db["Chatbot"]
 log_collection = db["conversation_logs"]
 
+# OpenAI setup
+
 openai = OpenAI(api_key=openai_key)
+
+# Conversation memory
 
 conversation_history = []
 last_product_name = None
 MAX_HISTORY = 6
 
+# Supported languages
+
 SUPPORTED_LANGUAGES = ["fi", "en", "sv", "de", "fr", "es"]
 
+# --- Utility Functions --- #
 
 def get_faq_context(limit=30):
     faqs = faq_collection.find({"answer": {"$exists": True}}).limit(limit)
@@ -64,11 +74,39 @@ def format_price_and_warranty(product, lang):
     return " ".join(msg for msg in messages[lang] if msg and price and warranty)
 
 
+# --- Main Chat Function --- #
+
 def chat_with_gpt(user_input):
     global last_product_name, conversation_history
 
+    # Detect language
+
     language = detect(user_input)
     context = get_faq_context()
+
+    # Define tech-related keywords
+
+    tech_keywords = [
+        "cpu", "gpu", "ram", "mobo", "motherboard", "graphics card", "processor",
+        "computer", "pc", "ssd", "storage", "cooler", "power supply", "psu",
+        "näytönohjain", "prosessori", "muisti", "tietokone", "kovalevy", "emolevy"
+    ]
+
+    # Filter non-tech questions
+
+    if not any(word.lower() in user_input.lower() for word in tech_keywords):
+        non_tech_responses = {
+            "fi": "Voin auttaa vain tietokonekomponentteihin ja teknologiaan liittyvissä kysymyksissä.",
+            "en": "I can only help with questions related to computer components or technology.",
+            "sv": "Jag kan bara hjälpa till med frågor som rör datorer eller teknik.",
+            "es": "Solo puedo ayudarte con preguntas relacionadas con componentes informáticos o tecnología.",
+            "de": "Ich kann nur bei Fragen zu Computern oder Technologie helfen.",
+            "fr": "Je peux uniquement vous aider avec des questions liées aux ordinateurs ou à la technologie."
+        }
+        return non_tech_responses.get(language, non_tech_responses["en"])
+
+    # Keywords related to price and warranty
+
     keywords = ["hinta", "maksaa", "price", "cost", "garanti", "warranty", "takuu"]
 
     matched_product = None
@@ -77,6 +115,8 @@ def chat_with_gpt(user_input):
         if matched_product:
             last_product_name = matched_product["name"]
             break
+
+    # --- Price / Warranty Queries --- #
 
     if any(word in user_input.lower() for word in keywords):
         product = matched_product or find_product_info(last_product_name)
@@ -88,7 +128,10 @@ def chat_with_gpt(user_input):
                 "en": "Unfortunately, I couldn't find the product information."
             }
             response = fallback.get(language, fallback["en"])
-    elif "show all rams" in user_input.lower() or "näytä kaikki muistit" in user_input.lower():
+
+    # --- "Show all" Queries --- #
+
+    elif any(cmd in user_input.lower() for cmd in ["show all rams", "näytä kaikki muistit"]):
         all_rams = list(collections["ram"].find())
         if not all_rams:
             return "RAM-muisteja ei löytynyt tietokannasta."
@@ -96,23 +139,50 @@ def chat_with_gpt(user_input):
             f"Nimi: {ram.get('name', 'Tuntematon')}, Hinta: {ram.get('Price', {}).get('totalPrice', 'ei tiedossa')} €, Takuu: {ram.get('Warranty', 'ei tiedossa')} vuotta"
             for ram in all_rams
         )
+
+    elif any(cmd in user_input.lower() for cmd in ["show all cpus", "näytä kaikki prosessorit"]):
+        all_cpus = list(collections["cpu"].find())
+        if not all_cpus:
+            return "Prosessoreita ei löytynyt tietokannasta."
+        response = "\n".join(
+            f"Nimi: {cpu.get('name', 'Tuntematon')}, Hinta: {cpu.get('Price', {}).get('totalPrice', 'ei tiedossa')} €, Takuu: {cpu.get('Warranty', 'ei tiedossa')} vuotta"
+            for cpu in all_cpus
+        )
+
+    elif any(cmd in user_input.lower() for cmd in ["show all gpus", "näytä kaikki näytönohjaimet"]):
+        all_gpus = list(collections["gpu"].find())
+        if not all_gpus:
+            return "Näytönohjaimia ei löytynyt tietokannasta."
+        response = "\n".join(
+            f"Nimi: {gpu.get('name', 'Tuntematon')}, Hinta: {gpu.get('Price', {}).get('totalPrice', 'ei tiedossa')} €, Takuu: {gpu.get('Warranty', 'ei tiedossa')} vuotta"
+            for gpu in all_gpus
+        )
+
+    elif any(cmd in user_input.lower() for cmd in ["show all mobos", "näytä kaikki emolevyt", "show all motherboards"]):
+        all_mobos = list(collections["mobo"].find())
+        if not all_mobos:
+            return "Emolevyjä ei löytynyt tietokannasta."
+        response = "\n".join(
+            f"Nimi: {mobo.get('name', 'Tuntematon')}, Hinta: {mobo.get('Price', {}).get('totalPrice', 'ei tiedossa')} €, Takuu: {mobo.get('Warranty', 'ei tiedossa')} vuotta"
+            for mobo in all_mobos
+        )
+
+    # --- Default GPT Response --- #
     else:
         prompts_by_lang = {
-    "fi": "Olet kohtelias asiakaspalvelurobotti, joka vastaa suomeksi ja auttaa verkkokaupan asiakkaita. Vastaa lyhyesti, selkeästi ja ystävällisesti.",
-    "en": "You are a polite customer service assistant that responds in English and helps customers of an online store. Answer clearly and concisely.",
-    "sv": "Du är en artig kundtjänstrobot som svarar på svenska och hjälper kunder i en webbutik. Svara tydligt och vänligt.",
-    "de": "Du bist ein höflicher Kundenservice-Bot, der auf Deutsch antwortet und Kunden in einem Online-Shop hilft. Antworte klar und freundlich.",
-    "fr": "Vous êtes un assistant client poli qui répond en français et aide les clients d'une boutique en ligne. Répondez clairement et gentiment.",
-    "es": "Eres un asistente de atención al cliente educado que responde en español y ayuda a los clientes de una tienda online. Responde de forma clara y amable."
+            "en": "You are a polite customer service assistant for an online electronics store. Only answer questions related to computer components, gaming PCs, or other tech-related topics. If the user asks about unrelated topics, politely refuse.",
+            "fi": "Olet ystävällinen asiakaspalvelurobotti, joka auttaa asiakkaita tietokonekomponentteihin ja teknologiaan liittyvissä asioissa. Jos asiakas kysyy jotain, mikä ei liity teknologiaan, kieltäydy kohteliaasti.",
+            "sv": "Du är en artig kundtjänstbot som endast svarar på frågor om datorer eller teknik. Om frågan inte handlar om teknik, vägra artigt.",
+            "es": "Eres un asistente de atención al cliente para una tienda de informática. Solo respondes preguntas relacionadas con componentes informáticos o tecnología. Rechaza amablemente cualquier otro tema.",
+            "de": "Du bist ein höflicher Kundenservice-Bot für ein Elektronikgeschäft. Antworte nur auf Fragen zu Computern oder Technologie. Lehne höflich andere Themen ab.",
+            "fr": "Vous êtes un assistant client pour une boutique d’électronique. Vous ne répondez qu’aux questions liées à l’informatique ou à la technologie. Refusez poliment tout autre sujet."
         }
 
-        language_prompt = prompts_by_lang.get(language, prompts_by_lang["en"])
-
         system_prompt = [
-            {"role": "system", "content": language_prompt},
-            {"role": "user", "content": "Please reply in the same language as the question."},
-            {"role": "system", "content": f"Tässä on usein kysyttyjä kysymyksiä:\n{context}"}
-]
+            {"role": "system", "content": prompts_by_lang.get(language, prompts_by_lang["en"])},
+            {"role": "user", "content": f"Tässä on usein kysyttyjä kysymyksiä:\n{context}"}
+        ]
+
         messages = system_prompt + conversation_history[-MAX_HISTORY:] + [{"role": "user", "content": user_input}]
 
         completion = openai.chat.completions.create(
@@ -121,6 +191,7 @@ def chat_with_gpt(user_input):
         )
         response = completion.choices[0].message.content.strip()
 
+    # --- Log conversation --- #
     conversation_history += [
         {"role": "user", "content": user_input},
         {"role": "assistant", "content": response}
