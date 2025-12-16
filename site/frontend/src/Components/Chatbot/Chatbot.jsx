@@ -7,21 +7,21 @@ const answer = {result: "default"};
 const Chatbot = () => {
     const inputRef = useRef(null);
     const [answers, setAnswer] = useState([]);
-    var tekstilaatikko = document.getElementById("chatbotti");
+    const [isDisabled, setIsDisabled] = useState(false);
 
     async function chat(question) {
-        tekstilaatikko.disabled = true;
+        setIsDisabled(!isDisabled);
         addQuestion(question);
         try{
             const response = await fetch('http://localhost:8080/chatbot?message=' + question);
             if(!response.ok) {
+                setIsDisabled(isDisabled);
                 throw new Error(response.status);
-                tekstilaatikko.disabled= false;
             } else {
+                setIsDisabled(isDisabled);
                 const result = await response.json();
                 console.log(result);
                 addAnswer(result.result);
-                tekstilaatikko.disabled= false;
             }
         } catch (error) {
             console.error(error.message);
@@ -53,7 +53,7 @@ const Chatbot = () => {
                 document.getElementById("chatbotti").value = "";
             }}>
                 <input className="text" id="chatbotti" ref={inputRef} type="text" name="test" />
-                <button type="submit">Kysy chatbotilta</button>
+                <button disabled={isDisabled} type="submit">Kysy chatbotilta</button>
             </form>
         </div>
     )
