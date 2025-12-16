@@ -10,6 +10,7 @@ const Chatbot = () => {
     
 
     async function chat(question) {
+        addQuestion(question);
         try{
             const response = await fetch('http://localhost:8080/chatbot?message=' + question);
             if(!response.ok) {
@@ -17,7 +18,6 @@ const Chatbot = () => {
             } else {
                 const result = await response.json();
                 console.log(result);
-                addQuestion(question);
                 addAnswer(result.result);
             }
         } catch (error) {
@@ -50,8 +50,6 @@ const Chatbot = () => {
                 <input className="text" id="chatbotti" ref={inputRef} type="text" name="test" />
                 <button type="submit">Test</button>
             </form>
-            
-            {/* <button onClick={() => chat('Moi, mikä on RAM?')}></button> */}
         </div>
     )
 }

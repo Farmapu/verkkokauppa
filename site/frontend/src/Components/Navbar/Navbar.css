@@ -5,19 +5,19 @@
     box-shadow: 0 1px 3px -2px black;
 }
 
-.nav-log{
+.navLog{
     display: flex;
     align-items: center;
     gap: 10px;
 }
 
-.nav-log p{
+.navLog p{
     color: #171717;
     font-size: 38px;
     font-weight: 600;
 }
 
-.nav-menu{
+.navMenu{
     display: flex;
     align-items: center;
     list-style: none;
@@ -25,7 +25,7 @@
     color: #626262;
     font-size: 20px;
 }
-.nav-menu li{
+.navMenu li{
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -33,7 +33,7 @@
     gap: 3px;
     cursor: pointer;
 }
-.nav-menu hr{
+.navMenu hr{
     border: none;
     width: 80%;
     height: 3px;
@@ -41,12 +41,12 @@
     background: darkred;
 }
 
-.nav-login{
+.navLogin{
     display: flex;
     align-items: center;
     gap: 45px;
 }
-.nav-login button{
+.navLogin button{
     width: 157px;
     height: 58xp;
     outline: none;
@@ -58,10 +58,10 @@
     background: white;
     cursor: pointer;
 }
-.nav-login button:active{
+.navLogin button:active{
     background: #f3f3f3;
 }
-.nav-login-count{
+.navLogin-count{
     width: 22px;
     height: 22px;
     display: flex;

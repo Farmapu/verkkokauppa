@@ -12,6 +12,7 @@ app.use(cors({
 const mongoURL = process.env.MONGO_URI;
 const port = 8080;
 
+//Run chatbot
 const runBot = async (script, args) => {
     const arguments = args.map(arg => args.toString());
     const py = spawn("python", [script, ...arguments]);
@@ -64,7 +65,7 @@ app.post('/products/ram/add', async(req, res) => {
     }
 });
 
-//Run chatbot
+//API Call for chatbot
 app.get('/chatbot', async (req, res) => {
     try {
         const result = await runBot('Python/chat.py', [req.query.message]);

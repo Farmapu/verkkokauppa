@@ -4,19 +4,19 @@ import './Hero.css';
 const Hero = () => {
     return(
         <div className='hero'>
-            <div className="hero-left">
+            <div className="heroLeft">
                 <h2>Vau uusinta uutta</h2>
                 <div>
-                    <p>AMD</p>
+                    <p>Yritys</p>
                     <p>julkasi</p>
                     <p>uusia prossuja</p>
                 </div>
-                <div className="hero-latest-button">
+                <div className="heroLatestButton">
                     <div>Katso heti</div>
 
                 </div>
             </div>
-            <div className="hero-right">
+            <div className="heroRight">
 
             </div>
         </div>
